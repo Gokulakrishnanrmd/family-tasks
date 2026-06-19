@@ -1,5 +1,5 @@
 /* Family Tasks service worker — offline shell caching */
-const CACHE = 'familytasks-v2.0';
+const CACHE = 'familytasks-v2.1';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable.png'];
 
 self.addEventListener('install', e => {

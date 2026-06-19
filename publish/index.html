@@ -68,6 +68,11 @@
   /* dashboard */
   .hero{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);animation:fade .4s}
   .hero h2{margin:0 0 2px;font-size:20px} .hero p{margin:0;opacity:.9;font-size:13px}
+  .home-hero{border-radius:24px;padding:22px 20px 24px;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.12);margin-bottom:14px;text-align:center;animation:fade .45s}
+  .hh-greet{font-size:21px;font-weight:700}
+  .hh-date{font-size:13px;opacity:.92;margin-top:3px}
+  .hh-ringwrap{margin:14px 0 4px}
+  .hh-msg{display:inline-block;font-size:14px;font-weight:600;background:rgba(255,255,255,.2);padding:7px 16px;border-radius:20px;margin-top:2px}
   .ring{display:flex;align-items:center;gap:16px;margin-top:14px}
   .ringbar{flex:1} .ringbar .bar{height:10px;background:rgba(255,255,255,.3);border-radius:10px;overflow:hidden}
   .ringbar .fill{height:100%;background:#fff;border-radius:10px;transition:width .6s}
@@ -142,9 +147,8 @@
   <h1>Family Tasks</h1>
   <div class="hbtns">
     <span class="iconbtn" id="cloudBadge" style="font-size:11px">💾 Local</span>
-    <button class="iconbtn" id="bellBtn" onclick="enableAlerts()" title="Turn on notifications">🔔</button>
     <button class="iconbtn" onclick="cycleTheme()" title="Theme">🎨</button>
-    <button class="iconbtn" id="whoBtn" onclick="logout()"></button>
+    <button class="iconbtn" id="logoutBtn" onclick="logout()" title="Logout">⏻ Logout</button>
   </div>
 </header>
 
@@ -160,6 +164,16 @@
 </div>
 
 <button class="fab" onclick="openSheet()">＋ New Task</button>
+
+<div class="ov" id="exitDlg" style="align-items:center">
+  <div class="sheet" style="border-radius:22px;max-width:330px;margin:auto;padding:26px 22px;text-align:center">
+    <div style="font-size:42px">👋</div>
+    <h2 style="margin:10px 0 4px">Exit Family Tasks?</h2>
+    <p style="color:var(--muted);margin:0 0 6px;font-size:14px">See you soon!</p>
+    <button class="save" onclick="confirmExit()">Exit</button>
+    <button class="cancel" onclick="hideExit()">Stay</button>
+  </div>
+</div>
 
 <div class="ov" id="ov">
   <div class="sheet">
@@ -213,7 +227,7 @@ const MEMBERS = [
 function memberColor(id){ const m=byId(id); return (m&&m.color)||'#7c9a92'; }
 const byId = id => MEMBERS.find(m=>m.id===id);
 const THEMES = ['','ocean','sunset','lavender','forest'];
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 
 let me=null, tab='home', filterUser='all', editId=null, personView=null, personReadOnly=false;
 let draft={type:'personal', assignees:[], priority:'medium', severity:'normal', tag:'', repeat:'none'};
@@ -303,7 +317,25 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Boot ---------- */
-function boot(){ document.getElementById('whoBtn').textContent=me.name+(me.role==='admin'?' (Admin) ⏻':' ⏻'); rollRecurring(); render(); }
+function boot(){ rollRecurring(); render();
+  // auto-ask notification permission shortly after login (no separate button needed)
+  setTimeout(()=>{ try{ enableAlerts(true); }catch(e){} }, 1500);
+}
+/* ---- Exit dialog + Android hardware back button (native) ---- */
+function showExit(){ document.getElementById('exitDlg').classList.add('on'); }
+function hideExit(){ document.getElementById('exitDlg').classList.remove('on'); }
+function confirmExit(){ try{ window.Capacitor.Plugins.App.exitApp(); }catch(e){ hideExit(); } }
+function hideSheet(){ stopMic(); document.getElementById('ov').classList.remove('on'); }
+if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App){
+  window.Capacitor.Plugins.App.addListener('backButton', ()=>{
+    if(!me){ return; }
+    if(document.getElementById('exitDlg').classList.contains('on')){ hideExit(); return; }
+    if(document.getElementById('ov').classList.contains('on')){ hideSheet(); return; }
+    if(personView){ personView=null; applyTab('home'); return; }
+    if(tab!=='home'){ applyTab('home'); return; }
+    showExit();
+  });
+}
 function rollRecurring(){
   const now=new Date();
   store.load().forEach(x=>{ if(x.status==='done'&&x.repeat&&x.repeat!=='none'&&x.completedAt){
@@ -394,9 +426,34 @@ function renderHome(){
   const overdue=visTasks.filter(t=>t.status==='todo'&&t.dueDate&&t.dueDate<today).length;
   const todayCount=visTasks.filter(t=>t.status==='todo'&&(t.priority==='high'||t.severity==='critical'||(t.dueDate&&t.dueDate<=today))).length;
 
-  let html=`<div class="hero"><h2>👋 Hi ${me.name}!</h2><p>${me.role==='admin'?'Family overview':'Your tasks at a glance'}</p>
-    <div class="ring"><div class="ringbar"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>Progress</span><span>${pct}%</span></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></div></div></div>`;
-  html+=`<div class="stat"><div class="s"><b>${total-done}</b><span>To-Do</span></div><div class="s"><b>${done}</b><span>Done</span></div><div class="s"><b style="color:${overdue?'var(--crit)':'var(--accent-d)'}">${overdue}</b><span>Overdue</span></div><div class="s"><b>${todayCount}</b><span>Today</span></div></div>`;
+  const todoCount=total-done;
+  const h=new Date().getHours();
+  const greet=h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night';
+  const dateStr=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  const R=46, C=2*Math.PI*R, off=C*(1-pct/100);
+  const msg = todoCount===0 ? "All done! Enjoy your day 🎉"
+            : todayCount ? `🔥 ${todayCount} need attention today`
+            : `${todoCount} task${todoCount>1?'s':''} pending`;
+  let html=`<div class="home-hero" style="background:linear-gradient(135deg,${me.color},var(--accent2))">
+    <div class="hh-greet">${greet}, ${me.name} 👋</div>
+    <div class="hh-date">${dateStr}</div>
+    <div class="hh-ringwrap">
+      <svg width="118" height="118" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="${R}" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="11"/>
+        <circle cx="60" cy="60" r="${R}" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"
+          stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .7s"/>
+        <text x="60" y="57" text-anchor="middle" fill="#fff" font-size="27" font-weight="700">${pct}%</text>
+        <text x="60" y="77" text-anchor="middle" fill="rgba(255,255,255,.9)" font-size="11">${done}/${total} done</text>
+      </svg>
+    </div>
+    <div class="hh-msg">${msg}</div>
+  </div>`;
+  html+=`<div class="stat">
+    <div class="s"><b>${todoCount}</b><span>To-Do</span></div>
+    <div class="s"><b>${todayCount}</b><span>Today</span></div>
+    <div class="s"><b style="color:${overdue?'var(--crit)':'var(--accent-d)'}">${overdue}</b><span>Overdue</span></div>
+    <div class="s"><b>${done}</b><span>Done</span></div>
+  </div>`;
 
   const commonAll=all.filter(t=>t.type==='common');
   const cDone=commonAll.filter(t=>t.status==='done').length; const cPct=commonAll.length?Math.round(cDone/commonAll.length*100):0;
@@ -585,38 +642,36 @@ const VAPID_KEY = "BO2sPdHLD0wZzV_J5XU5RqhJuT8whoNMeGtxfE0CehcO-eyP55k3V7k5tNTzi
 let messaging=null;
 try{ if(CLOUD && firebase.messaging && firebase.messaging.isSupported && firebase.messaging.isSupported()){ messaging=firebase.messaging(); } }catch(e){}
 function isNative(){ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
-async function enableNativeAlerts(){
+async function enableNativeAlerts(silent){
   try{
     const PN = window.Capacitor.Plugins.PushNotifications;
     const perm = await PN.requestPermissions();
-    if(perm.receive!=='granted'){ alert('Please allow notifications for Family Tasks in phone Settings.'); return; }
+    if(perm.receive!=='granted'){ if(!silent) alert('Please allow notifications for Family Tasks in phone Settings.'); return; }
     if(!window.__pnReg){
       window.__pnReg=true;
       PN.addListener('registration', async token=>{
-        try{ await db.collection('pushTokens').doc(token.value).set({token:token.value,userId:me.id,name:me.name,platform:'android',updatedAt:new Date().toISOString()});
-          const b=document.getElementById('bellBtn'); if(b) b.textContent='🔔✓'; }catch(e){}
+        try{ await db.collection('pushTokens').doc(token.value).set({token:token.value,userId:me.id,name:me.name,platform:'android',updatedAt:new Date().toISOString()}); }catch(e){}
       });
-      PN.addListener('registrationError', e=>alert('Notification setup error: '+JSON.stringify(e)));
+      PN.addListener('registrationError', e=>{ if(!silent) alert('Notification setup error: '+JSON.stringify(e)); });
     }
     await PN.register();
-    alert('🔔 Notifications ON for '+me.name+'. You\'ll get assign, done & 6am alerts.');
-  }catch(e){ alert('Could not enable notifications: '+(e&&e.message||e)); }
+    if(!silent) alert('🔔 Notifications ON for '+me.name+'.');
+  }catch(e){ if(!silent) alert('Could not enable notifications: '+(e&&e.message||e)); }
 }
-async function enableAlerts(){
-  if(!me){ alert('Please log in first.'); return; }
-  if(isNative()) return enableNativeAlerts();
-  if(!messaging){ alert('Sorry, notifications are not supported on this browser/device. On iPhone, add the app to your Home Screen first.'); return; }
-  if(VAPID_KEY.indexOf('PASTE')>=0){ alert('Morning alerts are not set up yet (missing key). Ask GK.'); return; }
+async function enableAlerts(silent){
+  if(!me){ if(!silent) alert('Please log in first.'); return; }
+  if(isNative()) return enableNativeAlerts(silent);
+  if(!messaging){ if(!silent) alert('Notifications not supported on this browser. On iPhone, add to Home Screen first.'); return; }
+  if(VAPID_KEY.indexOf('PASTE')>=0){ if(!silent) alert('Notifications not set up yet.'); return; }
   try{
     const perm=await Notification.requestPermission();
-    if(perm!=='granted'){ alert('Please allow notifications to get the 6am morning list.'); return; }
+    if(perm!=='granted'){ if(!silent) alert('Please allow notifications.'); return; }
     const token=await messaging.getToken({vapidKey:VAPID_KEY});
     if(token){
       await db.collection('pushTokens').doc(token).set({token,userId:me.id,name:me.name,updatedAt:new Date().toISOString()});
-      document.getElementById('bellBtn').textContent='🔔✓';
-      alert('🔔 Morning alerts are ON for '+me.name+'. You\'ll get your task list at 6am.');
+      if(!silent) alert('🔔 Notifications ON for '+me.name+'.');
     }
-  }catch(e){ alert('Could not enable alerts: '+(e&&e.message||e)); }
+  }catch(e){ if(!silent) alert('Could not enable alerts: '+(e&&e.message||e)); }
 }
 if(messaging){ try{ messaging.onMessage(p=>{ const n=p.notification||{}; try{ new Notification(n.title||'Family Tasks',{body:n.body||'',icon:'icon-192.png'}); }catch(e){} }); }catch(e){} }
 

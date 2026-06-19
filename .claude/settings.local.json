@@ -10,7 +10,20 @@
       "Bash(gh --version)",
       "Bash(gh auth *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(npx -y @bubblewrap/cli@latest version)",
+      "Bash(cd \"C:/Users/gokul/Documents\" && ls -1 && echo \"===== looking for android projects =====\" && find . -maxdepth 3 \\\\\\( -name \"gradlew*\" -o -name \"build.gradle*\" -o -name \"settings.gradle*\" -o -name \"AndroidManifest.xml\" \\\\\\) 2>/dev/null | head -40)",
+      "Read(//c/Program Files/Microsoft//**)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files/Eclipse Adoptium//**)",
+      "Bash(cd \"C:/Users/gokul/Documents/Daily task\" && mkdir -p native/www && cp publish/* native/www/ && echo \"=== www contents ===\" && ls -1 native/www/)",
+      "Bash(npm install *)",
+      "Bash(npx cap *)",
+      "Bash(printf 'sdk.dir=C\\\\\\\\:\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\gokul\\\\\\\\\\\\\\\\AppData\\\\\\\\\\\\\\\\Local\\\\\\\\\\\\\\\\Android\\\\\\\\\\\\\\\\Sdk\\\\n')",
+      "Bash(cd \"C:/Users/gokul/Documents/Daily task/native/android\")",
+      "Bash(export JAVA_HOME=\"/c/Program Files/Eclipse Adoptium/jdk-21.0.11.10-hotspot\")",
+      "Bash(./gradlew assembleDebug --no-daemon)",
+      "Bash(echo \"C:\\\\\\\\Users\\\\\\\\gokul\\\\\\\\Documents\\\\\\\\Daily task\\\\\\\\FamilyTasks.apk\")"
     ]
   }
 }

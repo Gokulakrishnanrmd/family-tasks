@@ -6,6 +6,8 @@ service-account*.json
 *.jks
 .env
 .env.*
+google-services.json
+native/android/app/google-services.json
 
 # Dependencies
 node_modules/

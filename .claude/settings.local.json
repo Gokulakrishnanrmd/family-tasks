@@ -23,7 +23,10 @@
       "Bash(cd \"C:/Users/gokul/Documents/Daily task/native/android\")",
       "Bash(export JAVA_HOME=\"/c/Program Files/Eclipse Adoptium/jdk-21.0.11.10-hotspot\")",
       "Bash(./gradlew assembleDebug --no-daemon)",
-      "Bash(echo \"C:\\\\\\\\Users\\\\\\\\gokul\\\\\\\\Documents\\\\\\\\Daily task\\\\\\\\FamilyTasks.apk\")"
+      "Bash(echo \"C:\\\\\\\\Users\\\\\\\\gokul\\\\\\\\Documents\\\\\\\\Daily task\\\\\\\\FamilyTasks.apk\")",
+      "Read(//c/Users/gokul/Downloads/**)",
+      "Read(//c/Users/gokul/Downloads//**)",
+      "Bash(cd \"C:/Users/gokul/Documents/Daily task\" && cp \"/c/Users/gokul/Downloads/google-services.json\" native/android/app/google-services.json && echo \"=== verify package name matches ===\" && grep -o '\"package_name\": *\"[^\"]*\"' native/android/app/google-services.json)"
     ]
   }
 }

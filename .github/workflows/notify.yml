@@ -1,0 +1,23 @@
+name: Event Notifier
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'   # every 20 minutes (GitHub may run a bit late)
+  workflow_dispatch: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: push
+        run: npm install
+      - name: Send assign/done notifications
+        working-directory: push
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SA }}
+        run: node notify-events.js

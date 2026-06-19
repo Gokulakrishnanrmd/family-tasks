@@ -1,0 +1,24 @@
+name: Morning Task Push
+
+on:
+  schedule:
+    # 00:30 UTC == 06:00 IST (India). GitHub cron can run a few minutes late.
+    - cron: '30 0 * * *'
+  workflow_dispatch: {}   # lets you run it manually to test
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: push
+        run: npm install
+      - name: Send morning notifications
+        working-directory: push
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SA }}
+        run: node send-morning.js

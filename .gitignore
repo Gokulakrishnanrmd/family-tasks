@@ -1,0 +1,16 @@
+# Secrets — NEVER commit these
+*firebase-adminsdk*.json
+serviceAccount*.json
+service-account*.json
+*.keystore
+*.jks
+.env
+.env.*
+
+# Dependencies
+node_modules/
+push/node_modules/
+
+# OS / editor junk
+Thumbs.db
+.DS_Store

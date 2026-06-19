@@ -1,0 +1,13 @@
+{
+  "name": "family-tasks-morning-push",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Daily 6am morning task notifications for the Family Tasks app",
+  "main": "send-morning.js",
+  "scripts": {
+    "start": "node send-morning.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.3.0"
+  }
+}

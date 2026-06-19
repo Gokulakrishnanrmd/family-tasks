@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python -m pip install --quiet pillow)",
+      "Bash(curl -s -o /dev/null -w \"status:%{http_code}\\\\n\" https://cerulean-biscochitos-e2eb6d.netlify.app/)",
+      "Bash(curl -s -o /dev/null -w \"manifest:%{http_code}\\\\n\" https://cerulean-biscochitos-e2eb6d.netlify.app/manifest.json)",
+      "Bash(curl -s https://cerulean-biscochitos-e2eb6d.netlify.app/)",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

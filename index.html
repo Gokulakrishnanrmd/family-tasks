@@ -9,6 +9,7 @@
 <title>Family Tasks</title>
 <!-- Firebase (cloud sync) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <style>
@@ -212,7 +213,7 @@ const MEMBERS = [
 function memberColor(id){ const m=byId(id); return (m&&m.color)||'#7c9a92'; }
 const byId = id => MEMBERS.find(m=>m.id===id);
 const THEMES = ['','ocean','sunset','lavender','forest'];
-const APP_VERSION = '1.9';
+const APP_VERSION = '2.0';
 
 let me=null, tab='home', filterUser='all', editId=null, personView=null, personReadOnly=false;
 let draft={type:'personal', assignees:[], priority:'medium', severity:'normal', tag:'', repeat:'none'};
@@ -232,15 +233,20 @@ const firebaseConfig = {
 
 let CACHE=[]; let db=null;
 const CLOUD = firebaseConfig.apiKey.indexOf('PASTE')<0;
+function startTaskListener(){
+  db.collection('tasks').onSnapshot(snap=>{
+    CACHE=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    rollRecurring(); if(me) render(); updateCloudBadge('🟢 Synced');
+  }, err=>{ console.warn('sync error',err); updateCloudBadge('🔴 Offline'); });
+}
 if(CLOUD){
   try{
     firebase.initializeApp(firebaseConfig);
     db=firebase.firestore();
     db.enablePersistence({synchronizeTabs:true}).catch(()=>{}); // offline support
-    db.collection('tasks').onSnapshot(snap=>{
-      CACHE=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      rollRecurring(); if(me) render(); updateCloudBadge('🟢 Synced');
-    }, err=>{ console.warn('sync error',err); updateCloudBadge('🔴 Offline'); });
+    // Sign in anonymously so the database can require auth (blocks strangers) — invisible to the family
+    firebase.auth().signInAnonymously().catch(e=>{ console.warn('anon auth failed',e); updateCloudBadge('🔴 Sign-in'); });
+    firebase.auth().onAuthStateChanged(user=>{ if(user && !window.__listening){ window.__listening=true; startTaskListener(); } });
   }catch(e){ console.error('Firebase init failed',e); }
 }
 function updateCloudBadge(txt){ const b=document.getElementById('cloudBadge'); if(b) b.textContent=txt; }

@@ -30,7 +30,8 @@
       "Bash(git branch *)",
       "Bash(git push *)",
       "Bash(tail -4)",
-      "Bash(cd android *)"
+      "Bash(cd android *)",
+      "Bash(git commit *)"
     ]
   }
 }

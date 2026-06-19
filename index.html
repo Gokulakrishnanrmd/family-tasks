@@ -227,7 +227,7 @@ const MEMBERS = [
 function memberColor(id){ const m=byId(id); return (m&&m.color)||'#7c9a92'; }
 const byId = id => MEMBERS.find(m=>m.id===id);
 const THEMES = ['','ocean','sunset','lavender','forest'];
-const APP_VERSION = '2.1';
+const APP_VERSION = '2.2';
 
 let me=null, tab='home', filterUser='all', editId=null, personView=null, personReadOnly=false;
 let draft={type:'personal', assignees:[], priority:'medium', severity:'normal', tag:'', repeat:'none'};
@@ -363,7 +363,9 @@ window.addEventListener('popstate', e=>{
   if(personView){ personView=null; applyTab((e.state&&e.state.tab)||'home'); return; }
   applyTab((e.state&&e.state.tab)||'home');
 });
+function updateFab(){ const f=document.querySelector('.fab'); if(f) f.style.display=(tab==='home'&&!personView)?'flex':'none'; }
 function render(){
+  updateFab();
   if(personView==='__common__') return renderCommon();
   if(personView) return renderPerson();
   if(tab==='home') return renderHome();
@@ -475,6 +477,7 @@ function renderHome(){
 function openPerson(id){ personView=id; history.pushState({person:id},''); renderPerson(); }
 function renderPerson(){
   const p=byId(personView); if(!p){ personView=null; return render(); }
+  updateFab();
   personReadOnly = (me.role!=='admin');
   document.getElementById('filterRow').innerHTML='';
   const all=store.load();
@@ -493,6 +496,7 @@ function renderPerson(){
 }
 function openCommon(){ personView='__common__'; history.pushState({person:'common'},''); renderCommon(); }
 function renderCommon(){
+  updateFab();
   personReadOnly=false; // anyone may complete a common task
   document.getElementById('filterRow').innerHTML='';
   const all=store.load();
@@ -621,18 +625,34 @@ async function autoTranslate(id, text){
 /* ---------- Voice ---------- */
 let rec=null, recOn=false;
 function toggleLang(){ voiceLang=voiceLang==='en'?'ta':'en'; document.getElementById('langTog').textContent=voiceLang==='en'?'EN':'த'; }
+function micUI(on){ recOn=on; const b=document.getElementById('micBtn'); if(b)b.classList.toggle('rec',on); }
 function toggleMic(){ recOn?stopMic():startMic(); }
-function startMic(){
+function startMic(){ if(isNative() && window.Capacitor.Plugins.SpeechRecognition) return startNativeMic(); startWebMic(); }
+function stopMic(){
+  if(isNative() && window.Capacitor.Plugins.SpeechRecognition){ try{ window.Capacitor.Plugins.SpeechRecognition.stop(); }catch(e){} micUI(false); return; }
+  if(rec){try{rec.stop()}catch(e){}} micUI(false);
+}
+async function startNativeMic(){
+  const SR=window.Capacitor.Plugins.SpeechRecognition;
+  try{
+    const perm=await SR.checkPermissions().catch(()=>null);
+    if(!perm || perm.speechRecognition!=='granted'){ const r=await SR.requestPermissions(); if(r.speechRecognition!=='granted'){ document.getElementById('micHint').textContent='Please allow microphone permission.'; return; } }
+    await SR.removeAllListeners();
+    await SR.addListener('partialResults', d=>{ if(d && d.matches && d.matches.length) document.getElementById('fTitle').value=d.matches[0]; });
+    micUI(true); document.getElementById('micHint').textContent='Listening in '+(voiceLang==='ta'?'Tamil':'English')+'… tap 🎤 again to stop.';
+    await SR.start({ language: voiceLang==='ta'?'ta-IN':'en-IN', maxResults:1, partialResults:true, popup:false });
+  }catch(e){ document.getElementById('micHint').textContent='Voice error: '+(e&&e.message||e); micUI(false); }
+}
+function startWebMic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ document.getElementById('micHint').textContent='Voice not supported here — please type. (Best in Chrome.)'; return; }
   rec=new SR(); rec.lang=voiceLang==='ta'?'ta-IN':'en-IN'; rec.interimResults=true; rec.continuous=false;
   rec.onresult=e=>{let s='';for(const r of e.results)s+=r[0].transcript;document.getElementById('fTitle').value=s;};
-  rec.onend=()=>stopMic();
-  rec.onerror=e=>{document.getElementById('micHint').textContent='Mic error: '+e.error+'. Allow microphone permission.';stopMic();};
-  try{ rec.start(); recOn=true; document.getElementById('micBtn').classList.add('rec');
+  rec.onend=()=>micUI(false);
+  rec.onerror=e=>{document.getElementById('micHint').textContent='Mic error: '+e.error+'. Allow microphone permission.';micUI(false);};
+  try{ rec.start(); micUI(true);
     document.getElementById('micHint').textContent='Listening in '+(voiceLang==='ta'?'Tamil':'English')+'… speak now.'; }catch(e){}
 }
-function stopMic(){ if(rec){try{rec.stop()}catch(e){}} recOn=false; const b=document.getElementById('micBtn'); if(b)b.classList.remove('rec'); }
 
 /* ---------- PWA service worker ---------- */
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

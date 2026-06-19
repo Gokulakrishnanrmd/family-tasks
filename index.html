@@ -212,7 +212,7 @@ const MEMBERS = [
 function memberColor(id){ const m=byId(id); return (m&&m.color)||'#7c9a92'; }
 const byId = id => MEMBERS.find(m=>m.id===id);
 const THEMES = ['','ocean','sunset','lavender','forest'];
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 
 let me=null, tab='home', filterUser='all', editId=null, personView=null, personReadOnly=false;
 let draft={type:'personal', assignees:[], priority:'medium', severity:'normal', tag:'', repeat:'none'};
@@ -578,8 +578,27 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.s
 const VAPID_KEY = "BO2sPdHLD0wZzV_J5XU5RqhJuT8whoNMeGtxfE0CehcO-eyP55k3V7k5tNTzi7kdc8n0BXWJE7jD9tUKbXd35IY";
 let messaging=null;
 try{ if(CLOUD && firebase.messaging && firebase.messaging.isSupported && firebase.messaging.isSupported()){ messaging=firebase.messaging(); } }catch(e){}
+function isNative(){ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+async function enableNativeAlerts(){
+  try{
+    const PN = window.Capacitor.Plugins.PushNotifications;
+    const perm = await PN.requestPermissions();
+    if(perm.receive!=='granted'){ alert('Please allow notifications for Family Tasks in phone Settings.'); return; }
+    if(!window.__pnReg){
+      window.__pnReg=true;
+      PN.addListener('registration', async token=>{
+        try{ await db.collection('pushTokens').doc(token.value).set({token:token.value,userId:me.id,name:me.name,platform:'android',updatedAt:new Date().toISOString()});
+          const b=document.getElementById('bellBtn'); if(b) b.textContent='🔔✓'; }catch(e){}
+      });
+      PN.addListener('registrationError', e=>alert('Notification setup error: '+JSON.stringify(e)));
+    }
+    await PN.register();
+    alert('🔔 Notifications ON for '+me.name+'. You\'ll get assign, done & 6am alerts.');
+  }catch(e){ alert('Could not enable notifications: '+(e&&e.message||e)); }
+}
 async function enableAlerts(){
   if(!me){ alert('Please log in first.'); return; }
+  if(isNative()) return enableNativeAlerts();
   if(!messaging){ alert('Sorry, notifications are not supported on this browser/device. On iPhone, add the app to your Home Screen first.'); return; }
   if(VAPID_KEY.indexOf('PASTE')>=0){ alert('Morning alerts are not set up yet (missing key). Ask GK.'); return; }
   try{

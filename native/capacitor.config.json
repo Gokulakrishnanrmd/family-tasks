@@ -1,5 +1,9 @@
 {
   "appId": "com.gk.familytasks",
   "appName": "Family Tasks",
-  "webDir": "www"
+  "webDir": "www",
+  "server": {
+    "url": "https://cerulean-biscochitos-e2eb6d.netlify.app",
+    "cleartext": false
+  }
 }

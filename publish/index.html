@@ -48,6 +48,7 @@
   .task-title{font-size:15px;font-weight:600;word-break:break-word}
   .task-alt{font-size:13px;color:var(--muted);font-style:italic;margin-top:2px}
   .task-notes{font-size:13px;color:var(--ink);opacity:.8;margin-top:3px;background:#f6f4ef;border-radius:8px;padding:5px 8px;line-height:1.35}
+  .task-by{font-size:11px;color:var(--muted);margin-top:6px}
   .task.done .task-title{text-decoration:line-through}
   .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
   .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#f0ede7;color:var(--muted)}
@@ -61,10 +62,10 @@
   .empty-emoji{font-size:42px;margin-bottom:10px;opacity:.85;animation:bob 3s ease-in-out infinite}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
   textarea{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:var(--ink);font-family:inherit;min-height:60px;resize:vertical}
-  .confetti{position:fixed;top:38%;width:10px;height:10px;border-radius:2px;z-index:55;pointer-events:none;animation:conf .9s ease-out forwards}
-  @keyframes conf{to{transform:translate(var(--dx),65vh) rotate(540deg);opacity:0}}
-  .check.pop{animation:pop .4s}
-  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .confetti{position:fixed;top:36%;width:12px;height:12px;border-radius:3px;z-index:55;pointer-events:none;animation:conf 2.1s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes conf{0%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}15%{transform:translate(calc(var(--dx)*.4),-40px) rotate(120deg) scale(1.1)}100%{transform:translate(var(--dx),70vh) rotate(720deg) scale(.7);opacity:0}}
+  .celebrate-msg{position:fixed;top:32%;left:50%;transform:translateX(-50%);z-index:56;background:var(--accent-d);color:#fff;font-weight:700;font-size:15px;padding:10px 20px;border-radius:24px;box-shadow:0 6px 18px rgba(0,0,0,.2);pointer-events:none;animation:cmsg 1.8s ease forwards}
+  @keyframes cmsg{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-10px) scale(.95)}}
   /* dashboard */
   .hero{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);animation:fade .4s}
   .hero h2{margin:0 0 2px;font-size:20px} .hero p{margin:0;opacity:.9;font-size:13px}
@@ -148,7 +149,7 @@
   <div class="hbtns">
     <span class="iconbtn" id="cloudBadge" style="font-size:11px">💾 Local</span>
     <button class="iconbtn" onclick="cycleTheme()" title="Theme">🎨</button>
-    <button class="iconbtn" id="logoutBtn" onclick="logout()" title="Logout">⏻ Logout</button>
+    <button class="iconbtn" id="logoutBtn" onclick="logout()" title="Logout">🚪 Logout</button>
   </div>
 </header>
 
@@ -227,7 +228,7 @@ const MEMBERS = [
 function memberColor(id){ const m=byId(id); return (m&&m.color)||'#7c9a92'; }
 const byId = id => MEMBERS.find(m=>m.id===id);
 const THEMES = ['','ocean','sunset','lavender','forest'];
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 
 let me=null, tab='home', filterUser='all', editId=null, personView=null, personReadOnly=false;
 let draft={type:'personal', assignees:[], priority:'medium', severity:'normal', tag:'', repeat:'none'};
@@ -537,6 +538,7 @@ function taskHTML(t){
         ${t.repeat&&t.repeat!=='none'?'<span class="pill">🔁 '+t.repeat+'</span>':''}
         ${t.dueDate?'<span class="pill '+((overdue||dueToday)?'crit':'')+'">'+(overdue?'⚠ overdue ':dueToday?'⏰ due today ':'due ')+t.dueDate+'</span>':''}
       </div>
+      ${t.createdBy?'<div class="task-by">✍️ added by '+esc(byId(t.createdBy)?(byId(t.createdBy).id===me.id?'you':byId(t.createdBy).name):'?')+(t.status==='done'&&t.completedBy?' · ✅ done by '+esc(byId(t.completedBy)?(byId(t.completedBy).id===me.id?'you':byId(t.completedBy).name):'?'):'')+'</div>':''}
     </div>
     ${(!personReadOnly&&canEdit(t))?'<div class="rowbtns"><button class="minibtn" onclick="openSheet(\''+t.id+'\')">✏️</button><button class="minibtn" onclick="del(\''+t.id+'\')">🗑️</button></div>':''}
   </div>`;
@@ -549,11 +551,14 @@ function toggle(id){ const x=store.load().find(a=>a.id===id); if(!x)return;
   if(ns==='done') celebrate();
   persistUpdate(id,{status:ns,completedAt:ns==='done'?new Date().toISOString():null,completedBy:ns==='done'?me.id:null}); }
 function celebrate(){
-  const colors=['#5f9e8f','#d98aa8','#e3b873','#5f8fb0','#a87ac0'];
-  for(let i=0;i<16;i++){ const d=document.createElement('div'); d.className='confetti';
-    d.style.left=(42+Math.random()*16)+'%'; d.style.background=colors[i%colors.length];
-    d.style.setProperty('--dx',(Math.random()*220-110)+'px'); d.style.animationDelay=(Math.random()*0.12)+'s';
-    document.body.appendChild(d); setTimeout(()=>d.remove(),1050); }
+  const colors=['#5f9e8f','#d98aa8','#e3b873','#5f8fb0','#a87ac0','#e08a5f'];
+  const msgs=['Well done! 🎉','Nicely done! 👏','One down! ✅','Great job! 🌟','Tick! 💪'];
+  const m=document.createElement('div'); m.className='celebrate-msg'; m.textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  document.body.appendChild(m); setTimeout(()=>m.remove(),1800);
+  for(let i=0;i<30;i++){ const d=document.createElement('div'); d.className='confetti';
+    d.style.left=(35+Math.random()*30)+'%'; d.style.background=colors[i%colors.length];
+    d.style.setProperty('--dx',(Math.random()*300-150)+'px'); d.style.animationDelay=(Math.random()*0.25)+'s';
+    document.body.appendChild(d); setTimeout(()=>d.remove(),2400); }
 }
 function del(id){ if(!confirm('Delete this task?'))return; persistDelete(id); }
 

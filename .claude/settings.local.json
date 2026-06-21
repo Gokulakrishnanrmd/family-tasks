@@ -33,7 +33,8 @@
       "Bash(cd android *)",
       "Bash(git commit *)",
       "Bash(tail -3)",
-      "Bash(tail -5)"
+      "Bash(tail -5)",
+      "Bash(tail -2)"
     ]
   }
 }
